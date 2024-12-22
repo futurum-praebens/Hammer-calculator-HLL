@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAMMER Calculator</title>
+    <style>
+        /* Reset some default styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1f4037 0%, #99f2c8 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .calculator:hover {
+            transform: translateY(-5px);
+        }
+
+        .calculator h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333333;
+            font-size: 1.8em;
+        }
+
+        .calculator input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #cccccc;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .calculator input[type="number"]:focus {
+            border-color: #66afe9;
+            outline: none;
+            box-shadow: 0 0 5px rgba(102, 175, 233, 0.5);
+        }
+
+        .calculator button {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .calculator button:hover {
+            background-color: #218838;
+        }
+
+        .results {
+            margin-top: 25px;
+        }
+
+        .results ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .results li {
+            background-color: #f8f9fa;
+            margin-bottom: 10px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 1em;
+            color: #333333;
+        }
+
+        .spread {
+            margin-top: 15px;
+            font-style: italic;
+            color: #555555;
+            text-align: center;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .calculator {
+                padding: 20px 25px;
+            }
+
+            .calculator h2 {
+                font-size: 1.5em;
+            }
+
+            .calculator input[type="number"],
+            .calculator button {
+                font-size: 0.9em;
+                padding: 10px;
+            }
+
+            .results li {
+                font-size: 0.9em;
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <h2>HAMMER Calculator</h2>
+        <input type="number" id="distance" placeholder="Enter distance in meters (e.g., 500)" min="100" max="1600">
+        <button onclick="calculateShots()">Calculate Shots</button>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        // Define the bracket definitions
+        const brackets = [
+            { distanceMax: 250, overUnderDelta: 3, expectedOverlap: 10 },
+            { distanceMax: 600, overUnderDelta: 4, expectedOverlap: 15 },
+            { distanceMax: 800, overUnderDelta: 5, expectedOverlap: 15 },
+            { distanceMax: 1200, overUnderDelta: 6, expectedOverlap: 20 },
+            { distanceMax: 1400, overUnderDelta: 7, expectedOverlap: 25 },
+            { distanceMax: 1600, overUnderDelta: 8, expectedOverlap: 25 }
+        ];
+
+        // Define the baseline eliminations for specific ranges
+        const baselineEliminations = [
+            { rangeMeters: 100, baselineElimination: 978 },
+            { rangeMeters: 130, baselineElimination: 971 },
+            { rangeMeters: 160, baselineElimination: 964 },
+            { rangeMeters: 190, baselineElimination: 957 },
+            { rangeMeters: 220, baselineElimination: 949 },
+            { rangeMeters: 250, baselineElimination: 942 },
+            { rangeMeters: 280, baselineElimination: 935 },
+            { rangeMeters: 310, baselineElimination: 928 },
+            { rangeMeters: 340, baselineElimination: 921 },
+            { rangeMeters: 370, baselineElimination: 914 },
+            { rangeMeters: 400, baselineElimination: 907 },
+            { rangeMeters: 430, baselineElimination: 900 },
+            { rangeMeters: 460, baselineElimination: 893 },
+            { rangeMeters: 490, baselineElimination: 885 },
+            { rangeMeters: 520, baselineElimination: 878 },
+            { rangeMeters: 550, baselineElimination: 871 },
+            { rangeMeters: 580, baselineElimination: 864 },
+            { rangeMeters: 610, baselineElimination: 857 },
+            { rangeMeters: 640, baselineElimination: 850 },
+            { rangeMeters: 670, baselineElimination: 843 },
+            { rangeMeters: 700, baselineElimination: 836 },
+            { rangeMeters: 730, baselineElimination: 829 },
+            { rangeMeters: 760, baselineElimination: 821 },
+            { rangeMeters: 790, baselineElimination: 814 },
+            { rangeMeters: 820, baselineElimination: 807 },
+            { rangeMeters: 850, baselineElimination: 800 },
+            { rangeMeters: 880, baselineElimination: 793 },
+            { rangeMeters: 910, baselineElimination: 786 },
+            { rangeMeters: 940, baselineElimination: 779 },
+            { rangeMeters: 970, baselineElimination: 772 },
+            { rangeMeters: 1000, baselineElimination: 764 },
+            { rangeMeters: 1030, baselineElimination: 757 },
+            { rangeMeters: 1060, baselineElimination: 750 },
+            { rangeMeters: 1090, baselineElimination: 743 },
+            { rangeMeters: 1120, baselineElimination: 736 },
+            { rangeMeters: 1150, baselineElimination: 729 },
+            { rangeMeters: 1180, baselineElimination: 722 },
+            { rangeMeters: 1210, baselineElimination: 715 },
+            { rangeMeters: 1240, baselineElimination: 708 },
+            { rangeMeters: 1270, baselineElimination: 700 },
+            { rangeMeters: 1300, baselineElimination: 693 },
+            { rangeMeters: 1330, baselineElimination: 686 },
+            { rangeMeters: 1360, baselineElimination: 679 },
+            { rangeMeters: 1390, baselineElimination: 672 },
+            { rangeMeters: 1420, baselineElimination: 665 },
+            { rangeMeters: 1450, baselineElimination: 658 },
+            { rangeMeters: 1480, baselineElimination: 651 },
+            { rangeMeters: 1510, baselineElimination: 644 },
+            { rangeMeters: 1540, baselineElimination: 636 },
+            { rangeMeters: 1570, baselineElimination: 629 },
+            { rangeMeters: 1600, baselineElimination: 622 }
+        ];
+
+        // Function to find the bracket based on distance
+        function getBracket(distance) {
+            for (let i = 0; i < brackets.length; i++) {
+                if (distance <= brackets[i].distanceMax) {
+                    return brackets[i];
+                }
+            }
+            return null;
+        }
+
+        // Function to find the closest baseline elimination
+        function getBaseline(distance) {
+            // Sort the baselineEliminations by distance
+            baselineEliminations.sort((a, b) => a.rangeMeters - b.rangeMeters);
+            
+            // If exact match, return it
+            for (let i = 0; i < baselineEliminations.length; i++) {
+                if (distance === baselineEliminations[i].rangeMeters) {
+                    return baselineEliminations[i].baselineElimination;
+                }
+            }
+
+            // If not exact, interpolate between closest lower and upper
+            let lower = null;
+            let upper = null;
+
+            for (let i = 0; i < baselineEliminations.length; i++) {
+                if (baselineEliminations[i].rangeMeters < distance) {
+                    lower = baselineEliminations[i];
+                }
+                if (baselineEliminations[i].rangeMeters > distance) {
+                    upper = baselineEliminations[i];
+                    break;
+                }
+            }
+
+            if (lower && upper) {
+                // Simple linear interpolation
+                let ratio = (distance - lower.rangeMeters) / (upper.rangeMeters - lower.rangeMeters);
+                let baseline = lower.baselineElimination + ratio * (upper.baselineElimination - lower.baselineElimination);
+                return Math.round(baseline);
+            } else if (lower) {
+                return lower.baselineElimination;
+            } else if (upper) {
+                return upper.baselineElimination;
+            } else {
+                return "N/A";
+            }
+        }
+
+        // Function to calculate shots
+        function calculateShots() {
+            const distanceInput = document.getElementById('distance').value.trim();
+            const distance = parseInt(distanceInput);
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = "";
+
+            if (isNaN(distance) || distance < 100 || distance > 1600) {
+                resultsDiv.innerHTML = "<p>Please enter a valid distance between 100m and 1600m.</p>";
+                return;
+            }
+
+            const bracket = getBracket(distance);
+            if (!bracket) {
+                resultsDiv.innerHTML = "<p>Distance out of range.</p>";
+                return;
+            }
+
+            const baseline = getBaseline(distance);
+            if (baseline === "N/A") {
+                resultsDiv.innerHTML = "<p>Baseline elimination not available for this distance.</p>";
+                return;
+            }
+
+            const overShot = baseline + bracket.overUnderDelta;
+            const underShot = baseline - bracket.overUnderDelta;
+            const spotterCorrected = `~${baseline}`;
+            const finalShot = `~${baseline}`;
+
+            // Create the results list
+            const ul = document.createElement('ul');
+
+            const shots = [
+                { label: "Shot 1 (User/Base):", value: baseline },
+                { label: "Shot 2 (Over):", value: `${baseline} + ${bracket.overUnderDelta} = ${overShot}` },
+                { label: "Shot 3 (Under):", value: `${baseline} - ${bracket.overUnderDelta} = ${underShot}` },
+                { label: "Shot 4 (Spotter-Corrected):", value: spotterCorrected },
+                { label: "Shot 5 (Final):", value: finalShot }
+            ];
+
+            shots.forEach(shot => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${shot.label}</strong> ${shot.value}`;
+                ul.appendChild(li);
+            });
+
+            // Append the list to results
+            resultsDiv.appendChild(ul);
+
+            // Show the spread
+            const spreadDiv = document.createElement('div');
+            spreadDiv.className = 'spread';
+            spreadDiv.innerHTML = `
+                <p><strong>Spread Overview:</strong></p>
+                <p>Over Shot: ${overShot}m<br>
+                Under Shot: ${underShot}m<br>
+                <em>Total Spread: ${overShot - underShot} meters</em></p>
+                <p><strong>Expected Overlap Spread:</strong> ${bracket.expectedOverlap} meters</p>
+            `;
+            resultsDiv.appendChild(spreadDiv);
+        }
+    </script>
+
+</body>
+</html>
